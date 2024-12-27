@@ -1,84 +1,54 @@
 import { useEffect, useState } from "react"
 
-
-export default function Receiver() {
-    const [socket, setSocket] = useState<WebSocket | null>(null);
-
-    useEffect(() => {
-        const socket = new WebSocket("ws://localhost:8080");
-
-        socket.onopen = () => {
-            socket.send(JSON.stringify({ type: 'receiver' }));
+export default function Receiver(){
+    const [socket,setSocket] = useState<WebSocket | null>(null);
+    const [isConnecting,setIsConnecting] = useState(false);
+    const [sessionId,setSessionId] = useState<string>("");
+    useEffect(()=>{
+        const socket = new WebSocket ("ws://localhost:8080")
+        if(sessionId){
+            socket.onopen = () =>{
+                socket.send(JSON.stringify({type:'joinSession',sessionId}))
+            }
         }
-
+        
         setSocket(socket);
 
-    }, []);
+    },[sessionId])
+     function joinSession(){
+        if(!socket) return;
+        setIsConnecting(true);
+        socket.onopen = () =>{
+            socket.send(JSON.stringify({type:'joinSession',sessionId}));
+        }   
 
-    async function fileReciver() {
-        if (!socket) {
-            return;
-        }
-
-
-
-
-        const pc = new RTCPeerConnection();
-        socket.onmessage = async (event) => {
+        const pc = new RTCPeerConnection();    
+        socket.onmessage = async (event) =>{
             const message = JSON.parse(event.data);
-            if (message.type === 'createOffer') {
-                pc.setRemoteDescription(message.sdp)
-                const answer = await pc.createAnswer();
-                pc.setLocalDescription(answer);
-                socket?.send(JSON.stringify({ type: 'createAnswer', sdp: pc.localDescription }));
-            }else if (message.type === 'iceCandidate'){
-                await pc.addIceCandidate(message.candidate);
-            }
-        }
-
-
-
-
-        pc.onicecandidate = (event) => {
-            console.log("i am inside the onicecandidate!", event);
-            if (event.candidate) {
-                socket?.send(JSON.stringify({ type: 'iceCandidate', candidate: event.candidate }))
-            }
-        }
-
-        // handling incomming data channel.
-        const receivedChunks: BlobPart[] | undefined = [];
-        pc.ondatachannel = (event) => {
-            const dataChannel = event.channel;
-            
-            // handle events on the data Channel.
-            dataChannel.onopen = () => console.log("Data Channel opened!");
-            dataChannel.onmessage = (event) => {
-                console.log("Message Received!", event.data);
-                if (event.data === "EOF") {
-                    const blob = new Blob(receivedChunks);
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = "received_file";
-                    a.click();
-
-                } else {
-                    receivedChunks.push(event.data);
+            if(message.type === 'createOffer'){
+                try{
+                    await pc.setRemoteDescription(message.sdp);
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    socket.send(JSON.stringify({type:'createAnswer',sdp:pc.localDescription}));
+                }catch(error){
+                    socket.send(JSON.stringify({type : 'error',error}));
                 }
             }
-
         }
-
-
-
-
     }
 
+    
 
     return <div>
-        hi , i  am from receiver.
-        <button onClick={fileReciver}>Receive file</button>
-
+        hi i am receiver side.    
+        <br />
+        Enter Session ID Below :
+        <br />
+        <input type="text" onChange={(e)=>{
+            setSessionId(e.target.value);
+        }}/>
+        <br />
+        <button onClick={joinSession}>Join Session</button>
     </div>
 }
