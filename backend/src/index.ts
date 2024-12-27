@@ -53,7 +53,17 @@ wss.on('connection',function connect(ws){
             if(session?.receiver){
                 session.receiver.send(JSON.stringify({type:'createAnswer',sdp:message.sdp}))
             }
+        }else if(message.type === 'iceCandidate'){
+            const session = getSessionBySocket(ws);
+            if(session?.sender){
+                session.receiver?.send(JSON.stringify({type:'iceCandidate',candidate:message.candidate}))
+            }else if(session?.receiver){
+                session.sender?.send(JSON.stringify({type:'iceCandidate',candidate:message.candidate}));
+            }
+        }else if(message.type === 'error'){
+            ws.send(JSON.stringify({type:'error',msg:"Error"}))
         }
+
 
 
     });
