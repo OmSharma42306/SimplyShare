@@ -20,7 +20,7 @@ wss.on('connection',function connect(ws){
             const session = sessions.get(sessionId);
             if(session){
                 session.receiver = ws;
-                console.log("Receiver Joined!");
+                console.log("Receiver Joined!",session);
                 session.sender?.send(JSON.stringify({type:'sessionJoined'}));
             }else{
                 ws.send(JSON.stringify({type : 'Error',message : "Session ID Is Wrong!"}));
@@ -50,16 +50,16 @@ wss.on('connection',function connect(ws){
             }
         }else if(message.type === 'createAnswer'){
             const session = getSessionBySocket(ws);
-            if(session?.receiver){
-                session.receiver.send(JSON.stringify({type:'createAnswer',sdp:message.sdp}))
+            if(session?.sender){
+                session.sender.send(JSON.stringify({type:'createAnswer',sdp:message.sdp}))
             }
         }else if(message.type === 'iceCandidate'){
             const session = getSessionBySocket(ws);
-            if(session?.sender){
+            if(ws === session?.sender){
                 session.receiver?.send(JSON.stringify({type:'iceCandidate',candidate:message.candidate}))
-            }else if(session?.receiver){
+            }else if(ws === session?.receiver){
                 session.sender?.send(JSON.stringify({type:'iceCandidate',candidate:message.candidate}));
-            }
+             }
         }else if(message.type === 'error'){
             ws.send(JSON.stringify({type:'error',msg:"Error"}))
         }

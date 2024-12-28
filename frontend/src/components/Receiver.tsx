@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-
+import { Download,Loader2 } from "lucide-react";
 export default function Receiver(){
     const [socket,setSocket] = useState<WebSocket | null>(null);
     const [isConnecting,setIsConnecting] = useState(false);
@@ -20,11 +20,16 @@ export default function Receiver(){
         }
 
     },[])
-    const pc = new RTCPeerConnection();    
-     
+    const pc = new RTCPeerConnection({iceServers: [{ urls: "stun:stun.l.google.com:19302" }],});    
+    pc.onicecandidate = (event) =>{
+        if(event.candidate){
+            console.log("ice candidate triggered!")
+            socket?.send(JSON.stringify({type : 'iceCandidate',candidate:event.candidate}));
+        }
+    }
     
     
-    function joinSession(){
+    async function joinSession(){
         if(!socket || !sessionId) return;
         setIsConnecting(true);
 
@@ -50,10 +55,46 @@ export default function Receiver(){
             }
         }
 
-        pc.onicecandidate = (event) =>{
-            if(event.candidate){
-                console.log("ice candidate triggered!")
-                socket?.send(JSON.stringify({type : 'iceCandidate',candidate:event.candidate}));
+        
+    }
+
+    pc.ondatachannel = (event) =>{
+        const channel = event.channel;
+        const receivedChunks : BlobPart[] = [];
+        console.log("ondatachannel triggered!")
+        let fileName = "receivedFile";
+        let fileType = "application/octet-stream" ; // default mime type
+        channel.onmessage = (event) =>{
+            if(typeof event.data === "string"){
+                try{
+                    // check if message contains metadata;
+                    const message = JSON.parse(event.data);
+                    if(message.type === 'metadata'){
+                        fileName = message.fileName;
+                        fileType = message.fileType;
+                        console.log("Received metadata:",{fileName,fileType})
+                        return
+                    }
+                }catch(error){
+                    console.error(error);
+                }
+            }
+
+
+
+
+            if(event.data  === "EOF"){
+                console.log("in the eof section")
+                const blob = new Blob(receivedChunks);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "received file";
+                a.click();
+
+            }else{
+                receivedChunks.push(event.data);
+                console.log("pushin received chunks")
             }
         }
     }
@@ -65,10 +106,10 @@ export default function Receiver(){
         <br />
         Enter Session ID Below :
         <br />
-        <input type="text" onChange={(e)=>{
+        <input type="text" placeholder="Enter Session Code" onChange={(e)=>{
             setSessionId(e.target.value);
         }}/>
         <br />
-        <button onClick={joinSession}>Join Session</button>
+        <button onClick={joinSession} disabled={!sessionId || isConnecting} >{isConnecting ? "Connecting...:":"Join Session"}</button>
     </div>
 }
