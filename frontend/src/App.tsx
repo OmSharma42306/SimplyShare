@@ -2,10 +2,10 @@ import Sender from './components/Sender';
 import Receiver from './components/Receiver';
 import { Navbar } from './components/Navbar';
 import { Home } from './components/Home';
-import { Routes,Route,useNavigate } from 'react-router-dom';
+import { Routes,Route } from 'react-router-dom';
 import { useState } from 'react';
 function App() {
-  const navigate = useNavigate();
+  
   const [darkMode,setDarkMode] = useState(false);
   return (
     

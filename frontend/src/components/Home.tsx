@@ -45,7 +45,11 @@ export function Home({ darkMode }: HomeProps) {
             </p>
           </Link>
         </div>
+        
       </div>
+
+    
     </div>
+
   );
 }

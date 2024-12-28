@@ -12,6 +12,15 @@ export default function Sender (){
             socket?.send(JSON.stringify({type : 'createSession'}));
         }
 
+        socket.onmessage = (event) =>{
+            let sessionId;
+        const message = JSON.parse(event.data);
+        if(message.type === 'sessionCreated'){
+            sessionId = message.sessionId;
+            setSessionId(sessionId)
+            console.log("SessionCreated ",sessionId);
+        }
+        }
         
 
         setSocket(socket);
@@ -35,13 +44,7 @@ export default function Sender (){
 
     socket.onmessage = async (event) =>{
         const message = JSON.parse(event.data);
-        let sessionId;
-        console.log("keerti")
-        if(message.type === 'sessionCreated'){
-            sessionId = message.sessionId;
-            setSessionId(sessionId)
-            console.log("SessionCreated ",sessionId);
-        }else if(message.type === 'createAnswer'){
+        if(message.type === 'createAnswer'){
             await pc.setRemoteDescription(message.sdp);
             console.log("setted remote descriptions")
         }else if(message.type === 'iceCandidate'){
@@ -120,6 +123,8 @@ export default function Sender (){
 
     return <div>
         hi i am sender.
+        
+        <h1 className="bg-neutral-600">Share This ID With Receiver! : {sessionId}</h1>
         <input type="file" onChange={(e)=>{
             if(e.target.files){
                 setFile(e.target.files?.[0] || null)
@@ -127,7 +132,11 @@ export default function Sender (){
             
         }} />
         <br />
-        <button onClick={startSendingFile} disabled={!file || isConnecting} >{isConnecting ? "Connceting":"send file"}</button>
-        {sessionId && <p>Share this code with the receiver: {sessionId}</p>}
+        <h2>click on send file below after uploading file.</h2>
+        <div className="font-bold bg-slate-400">
+        <button onClick={startSendingFile} disabled={!file || isConnecting} >{isConnecting ? "Connceting":"Send File"}</button>
+        </div>
+        
+        
     </div>
 }

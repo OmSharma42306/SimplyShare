@@ -13,7 +13,7 @@ export function Navbar({ darkMode, setDarkMode }: NavbarProps) {
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className={`flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             <Share2 className="w-8 h-8" />
-            <span className="text-xl font-bold">FileShare</span>
+            <span className="text-xl font-bold">FileShare by Om Sharma</span>
           </Link>
           <div className="flex items-center space-x-4">
             <button
